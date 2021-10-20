@@ -66,4 +66,5 @@ public interface StudentDao {
 
     //使用pagehelper分页插件
     List<Student> selectAllPageHelper();
+
 }
