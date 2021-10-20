@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!--指定properties文件的位置，从类路径根开始找
+        使用是：${key}
+        之前JavaSe用的是：ResourceBundle读取properties文件
+    -->
+    <properties resource="jdbc.properties" />
+    <!--settings控制mybatis全局行为-->
+    <!--日志配置，可以在控制台输出执行的SQL语句和参数-->
+    <settings>
+        <setting name="logImpl" value="STDOUT_LOGGING"/>
+    </settings>
+    <!--定义mapper文件中的resultType别名-->
+    <typeAliases>
+        <!--第一种方式：
+            可以指定一个类型一个别名
+            type：自定义类型的全限定名称
+            alias：别名
+        -->
+    <!--<typeAlias type="com.zoujx1024.entity.Student" alias="stu" />-->
+        <!--第二种
+            <package> name是包名，这个包中所有的类，类名就是别名（不区分大小写）
+        -->
+    <!--<package name="com.zoujx1024.entity.Student"/>-->
+    </typeAliases>
+    <!--配置插件，放在environments环境前面-->
+    <plugins>
+        <!--加载pagehelper分页插件-->
+        <plugin interceptor="com.github.pagehelper.PageInterceptor"></plugin>
+    </plugins>
+    <!--环境配置：数据库的连接信息
+        default：必须和某个environment的id值一样
+        告诉mybatis使用哪个数据库的连接信息，也就是访问哪个数据库
+    -->
+    <environments default="myTest">
+        <!--environment：一个数据库信息的配置环境
+            id：一个唯一值，自定义，表示环境的名称
+        -->
+        <environment id="myTest">
+            <!--transactionManager：mybatis的事务类型
+                type：事务的处理类型
+                    jdbc（表示使用jdbc中的Connection对象的commit、rollback做事务处理）
+                    MANAGED：把mybatis的事务处理委托给其他容器(一个框架spring、一个服务器软件)
+            -->
+            <transactionManager type="JDBC"/>
+            <!--dataSource：表示数据源，连接数据库的。Java体系中，规定实现了javax.sql.DataSource接口的都是数据源
+                数据源表示Connection对象。
+                type：表示数据源的类型，
+                    1）POOLED：表示使用连接池，mybatis会创建PooledDataSource类
+                    2）UPOOLED：不使用连接池，在每次执行SQL语句，先创建连接，执行SQL，再关闭连接
+                        mybatis会创建一个UnPooledDataSource，管理Connection对象的使用
+                    3）JNDI：Java命名和目录服务（Windows注册表）
+            -->
+            <dataSource type="POOLED">
+                <!--数据库的驱动类名-->
+                <property name="driver" value="${jdbc.driver}"/>
+                <!--连接数据库的url字符串-->
+                <property name="url" value="${jdbc.url}"/>
+                <property name="username" value="${jdbc.user}"/>
+                <property name="password" value="${jdbc.passwd}"/>
+            </dataSource>
+        </environment>
+    </environments>
+    <!--SQL mapper（SQL映射文件）的位置-->
+    <mappers>
+        <!--一个mapper标签指定一个文件的位置
+            从类路径开始的路径信息。target/classes后面的路径就是
+        -->
+        <mapper resource="com/zoujx1024/dao/StudentDao.xml"/>
+        <!--指定多个mapper文件，最好用package
+            name：xml文件(mapper文件)所在的包名，这个包中所有xml文件一次都加载给mybatis
+            使用要求：
+                1）mapper文件名称需要和接口名称完全一样
+                2）mapper和dao接口需要在同一目录
+        -->
+        <!--<package name="com.zoujx1024.dao"/>-->
+    </mappers>
+</configuration>
+
+<!--mybatis的主配置文件：主要定义了数据库的配置信息、SQL映射文件的位置-->

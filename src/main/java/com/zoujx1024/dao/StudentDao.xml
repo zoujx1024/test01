@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zoujx1024.dao.StudentDao">
+    <select id="selectStudents" resultType="com.zoujx1024.entity.Student">
+        <!--关键字做字段加中括号，这里看看是否有错-->
+        select id,name,email,age from student order by id
+    </select>
+    <!--插入数据-->
+    <insert id="insertStudent">
+        insert into student values (#{id},#{name},#{email},#{age})
+    </insert>
+    <!--条件查询
+        1.parameterType：dao接口中方法参数的数据类型
+        parameterType他的值是Java的全限定名称或者mybatis的别名
+        例如：全限定名称，parameterType="java.lang.Integer"
+             别名，      parameterType="int"
+        2.使用#{任意字符}之后，mybatis执行SQL是使用jdbc中的PrepareStatement对象
+        由mybatis执行下面的代码：
+            1）mybatis创建Connection，PrepareStatement对象
+            注：PrepareStatement先编译后传参，效率高可防止SQL注入
+            String sql="select id,name,email,age from student where id=?";
+            PrepareStatement ps = conn.PrepareStatement(sql);
+            ps.setInt(2);
+            2）执行SQL封装为resultType="com.zoujx1024.entity.Student"这个对象
+            ResultSet rs=ps.executeQuery();
+            Student student = null;
+            while(rs.next()){
+                //从数据库取表的一行数据，存到一个Java对象属性中
+                student = new Student();
+                student.setId(rs.getInt(id));
+                student.setName(rs.getString(name));
+                student.setEmail(rs.getString(email));
+                student.setAge(rs.getInt(age));
+            }
+            return student;//给了dao方法调用的返回值
+         3.#和$区别：
+            1）#使用？在SQL语句中做占位，使用PrepareStatement执行SQL语句，效率高
+            2）#能够避免SQL注入，安全
+            3）$不适用占位符，是字符串连接方式，使用Statement执行SQL语句，效率低
+            4）$有SQL注入风险，不安全
+            5）$可以替换表名或者列名
+    -->
+    <select id="selectStudentById" parameterType="java.lang.Integer" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where id=#{id}
+    </select>
+
+    <!--命名参数-->
+    <select id="selectMulitParam" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where name=#{myname} or age=#{myage}
+    </select>
+
+    <!--多个参数，使用Java对象的属性值，作为参数实际值
+        使用对象语法：#{属性名,javaType=类型名,jdbcType=数据类型}
+        例如：#{param,javaType=java.lang.String,jdbcType=VARCHAR}
+        简化：#{属性名}，javaType、jdbcType的值mybatis反射能获取到，不用写
+    -->
+    <select id="selectMulitStudent" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where name=#{name} or age=#{age}
+    </select>
+
+    <!--Map传参，使用语法#{map的key值}-->
+    <select id="selectMulitByMaP" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where name=#{myname} or age=#{myage}
+    </select>
+
+    <!--返回Map
+        列名是map的key，列值是map的value
+        只能最多返回一行记录，多余一行是错误。
+    -->
+    <select id="selectMapById" resultType="java.util.HashMap">
+        select id,name,email,age from student where id=#{id}
+        <!--select id,name,email,age from student where id>#{id}-->
+    </select>
+
+    <!--使用resultMap
+        1）先定义resultMap
+        2）在select标签，使用resultMap来引用1）定义的。
+        resultMap和resultType不能一起使用
+    -->
+    <!--定义resultMap
+        id：自定义名称，表示你定义的这个resultMap
+        type：Java类型的全限定名称
+    -->
+    <resultMap id="studentMap" type="com.zoujx1024.entity.Student">
+        <!--列名和Java属性的关系-->
+        <!--主键列使用id标签
+            column：列名
+            property：Java类型的属性名
+        -->
+        <id column="id" property="id"/>
+        <!--非主键列，使用result-->
+        <result column="name" property="name"/>
+        <result column="email" property="email"/>
+        <result column="age" property="age"/>
+    </resultMap>
+    <select id="selectAllStudents" resultMap="studentMap">
+        select id,name,email,age from student
+    </select>
+
+    <resultMap id="myStudentMap" type="com.zoujx1024.entity.MyStudent">
+        <id column="id" property="stuId"/>
+        <result column="name" property="stuName" />
+        <result column="email" property="stuEmail"/>
+        <result column="age" property="stuAge"/>
+    </resultMap>
+    <!--列名和属性名不一样，方法一，使用resultMap-->
+    <select id="selectMyStudent" resultMap="myStudentMap">
+        select id,name,email,age from student
+    </select>
+
+    <!--列名和属性名不一样，方法二，在SQL语句中起别名-->
+    <!--resultType默认原则是：同名的列值赋值给同名的属性。使用列别名（Java对象的属性名）-->
+    <select id="selectDiffColProperty" resultType="com.zoujx1024.entity.MyStudent">
+        select id as stuId,name as stuName,email as stuEmail,age as stuAge from student
+    </select>
+
+    <!--模糊查询，第一种，Java代码指定like的内容-->
+    <select id="selectLikeOne" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where name like #{likename}
+    </select>
+    <!--模糊查询，第二种，在mapper文件中拼接like的内容-->
+    <select id="selectLikeTwo" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student where name like "%" #{likename} "%"
+    </select>
+
+    <!--动态SQL-if,test="使用参数Java对象的属性值作为判断条件，语法：属性=值"-->
+    <select id="selectStudentIf" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student
+        where 1=1
+        <if test="name !=null and name !=''">
+            and name=#{name}
+        </if>
+        <if test="age>20">
+            or age=#{age}
+        </if>
+    </select>
+
+    <!--动态SQL-where，where标签第一个if有无and都行，第一个条件成立会自动加上，不成立自动去掉，
+        其余的if必须加上and。当where里面没有一个if成立，where不会加入SQL语句中
+     -->
+    <select id="selectStudentWhere" resultType="com.zoujx1024.entity.Student">
+        select id,name,email,age from student
+        <where>
+            <if test="name !=null and name !=''">
+                and name=#{name}
+            </if>
+            <if test="age>20">
+                or age=#{age}
+            </if>
+        </where>
+    </select>
+
+    <!--定义SQL片段（可以重复使用）-->
+    <sql id="sqlone">
+        select * from student
+    </sql>
+
+    <!--<foreach>循环Java中的数组、list集合的。主要用在SQL的in语句中。
+        效果：select * from student where id in(1,2,3)
+        collection：接口中的方法参数的类型，数组array、集合list
+        item：自定义的，表示数组和集合成员的变量
+        open：循环开始的字符
+        close：循环结束的字符
+        separator：集合成员之间的分隔符
+    -->
+    <!--foreach使用一循环基本类型的值，List<Integer>-->
+    <select id="selectForeachOne" resultType="com.zoujx1024.entity.Student">
+        <!--复用SQL片段-->
+        <include refid="sqlone"></include>
+        where id in
+        <foreach collection="list" open="(" close=")" item="myid" separator=",">
+            #{myid}
+        </foreach>
+    </select>
+
+    <!--foreach使用二循环对象中属性值，，List<Student>-->
+    <select id="selectForeachTwo" resultType="com.zoujx1024.entity.Student">
+        select * from student where id in
+        <foreach collection="list" item="stu" open="(" close=")" separator=",">
+            #{stu.id}
+        </foreach>
+    </select>
+
+    <!--使用pagehelper分页插件-->
+    <select id="selectAllPageHelper" resultType="com.zoujx1024.entity.Student">
+        select * from student
+    </select>
+</mapper>
+
+<!--
+    SQL映射文件：写SQL语句的，mybatis会执行这些语句的。
+    1.指定约束文件
+        <!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+      mybatis-3-mapper.dtd是约束文件名称，扩展名是dtd
+    2.约束文件作用：限制，检查在当前文件中出现的标签、属性必须符合mybatis的要求。
+    3.mapper是当前文件的根标签，必须有
+      namespace：叫做命名空间，唯一值的，可以是自定义的字符串，要求使用接口的全限定名称
+      全限定名称就是包名+类名，比如com.zoujx1024.dao.StudentDao
+    4.在当前文件中，可以使用特定的标签，表示数据库的特定操作
+      <select>：表示执行查询
+      <update>：表示更新
+      <insert>：表示插入
+      <delete>：表示删除
+    5.id：你要执行SQL语句的唯一标识，mybatis会使用这个id值来找到要执行的SQL语句
+      可以自定义，要求是接口中的方法名称
+      resultType：表示结果类型的，是SQL语句执行后得到ResultSet，遍历这个ResultSet得到Java对象的类型。
+      可以自定义，要求是类型的全限定名称
+        1)结果类型有Java对象全限定名称和mybatis别名两种。如：java.lang.Integer、别名int
+        2)定义自定义类型的别名步骤：
+            在mybatis主配置文件中定义，使<typeAlias>定义别名
+            可以在resultType中使用自定义别名
+       resultMap：结果映射，指定列名和Java对象的属性对应关系
+        1）你自定义列值赋值给那个属性
+        2）当你的列名和属性名不一样时，一定使用resultMap
+-->
